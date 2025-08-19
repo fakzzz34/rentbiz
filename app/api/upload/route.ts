@@ -3,24 +3,39 @@ import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from 'next/server';
 import { User } from '@supabase/supabase-js';
 
+// -----------------------------------------------------------------------------
+// Supabase & Authentication
+// -----------------------------------------------------------------------------
+
 // Inisialisasi Supabase client
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-// Fungsi pembantu untuk memverifikasi token autentikasi
+/**
+ * Memverifikasi token autentikasi pengguna.
+ * @param {string | null} token Token JWT dari header Authorization.
+ * @returns {Promise<User | null>} Objek pengguna jika token valid, jika tidak, null.
+ */
 async function verifyAuth(token: string | null): Promise<User | null> {
   if (!token) return null;
   try {
     const { data: { user }, error } = await supabase.auth.getUser(token);
-    if (error || !user) return null;
+    if (error || !user) {
+      console.error('Auth verification failed:', error?.message);
+      return null;
+    }
     return user;
   } catch (error) {
-    console.log('Auth verification error:', error);
+    console.error('Auth verification error:', error);
     return null;
   }
 }
+
+// -----------------------------------------------------------------------------
+// API Route Handler
+// -----------------------------------------------------------------------------
 
 export async function POST(request: Request) {
   const token = request.headers.get('Authorization')?.replace('Bearer ', '') ?? null;
@@ -38,20 +53,24 @@ export async function POST(request: Request) {
   }
 
   try {
+    // Menghasilkan nama file unik dengan userID dan UUID
     const fileExt = file.name.split('.').pop();
     const fileName = `${user.id}/${crypto.randomUUID()}.${fileExt}`;
-    const { data, error } = await supabase.storage
+
+    // Unggah file ke Supabase Storage
+    const { error: uploadError } = await supabase.storage
       .from('rental-images') // Pastikan bucket ini ada di Supabase
       .upload(fileName, file, {
         cacheControl: '3600',
         upsert: false,
       });
 
-    if (error) {
-      console.log('Supabase upload error:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    if (uploadError) {
+      console.error('Supabase upload error:', uploadError);
+      return NextResponse.json({ error: uploadError.message }, { status: 500 });
     }
 
+    // Mendapatkan URL publik dari file yang baru diunggah
     const { data: publicUrlData } = supabase.storage
       .from('rental-images')
       .getPublicUrl(fileName);

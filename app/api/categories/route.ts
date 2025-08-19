@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 // Ini adalah database in-memory sederhana untuk tujuan demonstrasi.
 // Di lingkungan produksi, Anda akan menggunakan database sungguhan.
-let categories = [
+const categories = [
   { id: "photography", name: "Fotografi", icon: "camera", color: "bg-yellow-500", description: "Kamera, lensa, drone, dan perlengkapan studio." },
   { id: "gaming", name: "Gaming", icon: "gaming", color: "bg-purple-500", description: "Konsol, PC, aksesori, dan game." },
   { id: "vehicle", name: "Kendaraan", icon: "car", color: "bg-blue-500", description: "Sepeda, motor, mobil, dan alat transportasi lainnya." },

@@ -12,12 +12,6 @@ import {
   Trash2,
   Search,
   Filter,
-  Car,
-  Gamepad2,
-  Scissors,
-  Camera,
-  Bike,
-  Laptop,
   MoreHorizontal,
   Eye,
   Package,
@@ -26,15 +20,14 @@ import {
   XCircle,
   AlertCircle,
   Loader2,
-  Palette,
-  Bike as BikeIcon,
+  // Ikon yang digunakan, pastikan tidak ada yang tidak terpakai
   Car as CarIcon,
   Gamepad2 as Gamepad2Icon,
   Scissors as ScissorsIcon,
   Camera as CameraIcon,
+  Bike as BikeIcon,
   Laptop as LaptopIcon,
   Circle as CircleIcon,
-  Square as SquareIcon,
 } from 'lucide-react';
 
 interface RentalItem {
@@ -59,6 +52,7 @@ interface Category {
 }
 
 export function RentalManagement() {
+  // Menghapus state yang tidak digunakan
   const [activeTab, setActiveTab] = useState('items');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -71,7 +65,7 @@ export function RentalManagement() {
   const [error, setError] = useState<string | null>(null);
 
   // Data statis untuk ikon dan warna
-  const categoryIcons: { [key: string]: any } = {
+  const categoryIcons: { [key: string]: React.ElementType } = {
     'car': CarIcon,
     'gaming': Gamepad2Icon,
     'scissors': ScissorsIcon,
@@ -101,7 +95,7 @@ export function RentalManagement() {
     };
   };
 
-  const getStatusIcon = (status: string) => {
+  const getStatusIcon = (status: RentalItem['status']) => {
     switch (status) {
       case 'available':
         return <CheckCircle className="w-4 h-4 text-green-500" />;
@@ -156,7 +150,7 @@ export function RentalManagement() {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (!categoriesRes.ok) throw new Error('Failed to fetch categories');
-        const categoriesData = await categoriesRes.json();
+        const categoriesData: { categories: Category[] } = await categoriesRes.json();
         setCategories(categoriesData.categories);
 
         // Ambil data items
@@ -168,7 +162,7 @@ export function RentalManagement() {
             description: 'Kamera profesional untuk hasil maksimal.',
             pricePerHour: 50000,
             pricePerDay: 300000,
-            status: 'available', // Tipe literal string yang benar
+            status: 'available',
             image: 'https://placehold.co/300x200/cccccc/333333?text=Kamera',
             totalUnits: 5,
             availableUnits: 3,
@@ -180,7 +174,7 @@ export function RentalManagement() {
             description: 'Konsol game generasi terbaru dengan grafis memukau.',
             pricePerHour: 40000,
             pricePerDay: 250000,
-            status: 'rented', // Tipe literal string yang benar
+            status: 'rented',
             image: 'https://placehold.co/300x200/444444/ffffff?text=PS5',
             totalUnits: 3,
             availableUnits: 0,
@@ -205,23 +199,22 @@ export function RentalManagement() {
     setIsUploading(true);
     setError(null);
     const token = 'YOUR_AUTH_TOKEN_HERE';
-    let imageUrl = 'https://placehold.co/300x200/cccccc/333333?text=No+Image';
+    let imageUrl: string = 'https://placehold.co/300x200/cccccc/333333?text=No+Image';
 
     try {
       if (selectedImage) {
         const formData = new FormData();
         formData.append('file', selectedImage);
 
-        // Contoh: Mengirim ke API upload (seperti yang dibuat sebelumnya)
-        // Anda harus mengaktifkan kode ini di lingkungan produksi
-        // const uploadRes = await fetch('/api/upload', {
-        //   method: 'POST',
-        //   headers: { Authorization: `Bearer ${token}` },
-        //   body: formData,
-        // });
-        // if (!uploadRes.ok) throw new Error('Failed to upload image');
-        // const uploadResult = await uploadRes.json();
-        // imageUrl = uploadResult.url;
+        const uploadRes = await fetch('/api/upload', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+
+        if (!uploadRes.ok) throw new Error('Failed to upload image');
+        const uploadResult: { url: string } = await uploadRes.json();
+        imageUrl = uploadResult.url;
       }
 
       // Simulasi penambahan item
@@ -270,7 +263,7 @@ export function RentalManagement() {
 
       if (!res.ok) throw new Error('Failed to add category');
       
-      const result = await res.json();
+      const result: { category: Category } = await res.json();
       setCategories(prev => [...prev, result.category]);
 
       // Reset form dan modal
@@ -413,6 +406,7 @@ export function RentalManagement() {
               return (
                 <Card key={item.id} className="card-shadow hover:card-shadow-lg transition-all">
                   <div className="aspect-video bg-muted rounded-t-lg overflow-hidden">
+                    {/* Menggunakan <img> element, yang merupakan warning dari Next.js */}
                     <img
                       src={item.image}
                       alt={item.name}
@@ -534,71 +528,6 @@ export function RentalManagement() {
         </div>
       )}
 
-      {activeTab === 'analytics' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="card-shadow">
-            <CardHeader>
-              <CardTitle>Item Terpopuler</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {rentalItems.slice(0, 5).map((item, index) => {
-                  const categoryInfo = getCategoryInfo(item.category);
-                  return (
-                    <div key={item.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm font-medium text-muted-foreground w-6">#{index + 1}</span>
-                        {React.createElement(categoryInfo.icon, { className: "w-5 h-5 text-muted-foreground" })}
-                        <div>
-                          <p className="font-medium text-foreground">{item.name}</p>
-                          <p className="text-xs text-muted-foreground">{categoryInfo.name}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium text-foreground">{formatCurrency(item.pricePerDay)}</p>
-                        <p className="text-xs text-muted-foreground">per hari</p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="card-shadow">
-            <CardHeader>
-              <CardTitle>Kategori Terpopuler</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {categories.slice(0, 5).map((category, index) => {
-                  const itemCount = rentalItems.filter(item => item.category === category.id).length;
-                  const { icon: CategoryIcon } = getCategoryInfo(category.id);
-                  return (
-                    <div key={category.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm font-medium text-muted-foreground w-6">#{index + 1}</span>
-                        <div className={`w-8 h-8 ${category.color} rounded-lg flex items-center justify-center`}>
-                          {React.createElement(CategoryIcon, { className: "w-4 h-4 text-white" })}
-                        </div>
-                        <div>
-                          <p className="font-medium text-foreground">{category.name}</p>
-                          <p className="text-xs text-muted-foreground">{category.description}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium text-foreground">{itemCount}</p>
-                        <p className="text-xs text-muted-foreground">item</p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
       {/* Add Item Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -629,6 +558,7 @@ export function RentalManagement() {
                         {categories.map(category => (
                           <SelectItem key={category.id} value={category.id}>
                             <div className="flex items-center gap-2">
+                              {/* Menggunakan React.createElement untuk komponen ikon */}
                               {React.createElement(getCategoryInfo(category.id).icon, { className: "w-4 h-4" })}
                               {category.name}
                             </div>
